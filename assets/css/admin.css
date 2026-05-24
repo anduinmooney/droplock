@@ -1,0 +1,26 @@
+.droplock-product-options h4 {
+	font-size: 14px;
+	font-weight: 700;
+	color: #1d2327;
+}
+.droplock-product-options .form-field {
+	margin-bottom: 12px;
+}
+.droplock-wrap .droplock-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 16px 20px;
+	margin: 16px 0;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+.droplock-wrap .droplock-card h2 {
+	margin-top: 0;
+}
+.droplock-log-table th,
+.droplock-log-table td {
+	font-size: 13px;
+}
+.droplock-pro-card {
+	border-left: 4px solid #d04600 !important;
+}

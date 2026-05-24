@@ -1,0 +1,112 @@
+<?php
+/**
+ * Helper utilities for DropLock (Lite).
+ *
+ * @package DropLock_Lite
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class DropLock_Helper {
+
+	const META_ENABLED       = '_droplock_enabled';
+	const META_MAX_QTY       = '_droplock_max_qty';
+	const META_LIMIT_MESSAGE = '_droplock_limit_message';
+	const META_BADGE_TEXT    = '_droplock_badge_text';
+	const META_SHOW_BADGE    = '_droplock_show_badge';
+
+	/**
+	 * Lite hard-codes counted statuses (Pro makes them configurable).
+	 *
+	 * @return string[]
+	 */
+	public static function default_statuses() {
+		return array( 'completed', 'processing', 'on-hold' );
+	}
+
+	public static function default_limit_message() {
+		return __(
+			'You have already reached the purchase limit for {product_name}. This limited product is restricted to {limit} per customer.',
+			'droplock'
+		);
+	}
+
+	public static function default_badge_text() {
+		return __( 'Limit {limit} per customer', 'droplock' );
+	}
+
+	public static function is_enabled( $product_id ) {
+		return 'yes' === get_post_meta( (int) $product_id, self::META_ENABLED, true );
+	}
+
+	public static function get_max_qty( $product_id ) {
+		$raw = get_post_meta( (int) $product_id, self::META_MAX_QTY, true );
+		$qty = absint( $raw );
+		return $qty > 0 ? $qty : 1;
+	}
+
+	/**
+	 * Lite uses defaults only; ignores any saved status meta.
+	 */
+	public static function get_order_statuses( $product_id ) {
+		return self::default_statuses();
+	}
+
+	public static function get_limit_message( $product_id ) {
+		$msg = get_post_meta( (int) $product_id, self::META_LIMIT_MESSAGE, true );
+		if ( ! is_string( $msg ) || '' === trim( $msg ) ) {
+			$msg = self::default_limit_message();
+		}
+		return $msg;
+	}
+
+	public static function get_badge_text( $product_id ) {
+		$txt = get_post_meta( (int) $product_id, self::META_BADGE_TEXT, true );
+		if ( ! is_string( $txt ) || '' === trim( $txt ) ) {
+			$txt = self::default_badge_text();
+		}
+		return $txt;
+	}
+
+	public static function should_show_badge( $product_id ) {
+		$val = get_post_meta( (int) $product_id, self::META_SHOW_BADGE, true );
+		if ( '' === $val ) {
+			return true;
+		}
+		return 'yes' === $val;
+	}
+
+	public static function format_message( $template, $vars = array() ) {
+		$defaults = array(
+			'product_name'  => '',
+			'limit'         => '',
+			'purchased_qty' => '',
+			'cart_qty'      => '',
+			'remaining_qty' => '',
+		);
+		$vars = array_merge( $defaults, $vars );
+
+		$replacements = array();
+		foreach ( $vars as $key => $val ) {
+			$replacements[ '{' . $key . '}' ] = (string) $val;
+		}
+		return strtr( $template, $replacements );
+	}
+
+	public static function current_user_can_bypass() {
+		if ( current_user_can( 'manage_woocommerce' ) ) {
+			return true;
+		}
+		return (bool) apply_filters( 'droplock_bypass_validation', false );
+	}
+
+	public static function get_effective_product_id( $product_id ) {
+		$product = wc_get_product( $product_id );
+		if ( $product && $product->is_type( 'variation' ) ) {
+			return $product->get_parent_id();
+		}
+		return (int) $product_id;
+	}
+}
