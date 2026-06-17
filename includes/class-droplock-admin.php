@@ -26,10 +26,34 @@ class DropLock_Admin {
 		$this->logger = $logger;
 	}
 
+	const MILESTONE_THRESHOLD = 25;             // blocks before the milestone notice appears
+	const MILESTONE_OPTION    = 'droplock_milestone_dismissed';
+
 	public function register_hooks() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'woocommerce_product_options_general_product_data', array( $this, 'render_product_fields' ) );
 		add_action( 'woocommerce_process_product_meta', array( $this, 'save_product_fields' ), 10, 1 );
+		add_action( 'admin_notices', array( $this, 'maybe_render_milestone_notice' ) );
+		add_action( 'admin_init', array( $this, 'maybe_dismiss_milestone_notice' ) );
+	}
+
+	/**
+	 * Build a consistent, attributed link to the Pro page.
+	 *
+	 * @param string $medium Where the click came from (for UTM).
+	 * @param string $anchor Optional URL fragment, e.g. 'editions'.
+	 */
+	public static function pro_url( $medium, $anchor = '' ) {
+		$url = 'https://droplockwp.com/' . ( $anchor ? '#' . $anchor : '' );
+		$url = add_query_arg(
+			array(
+				'utm_source'   => 'droplock-free',
+				'utm_medium'   => $medium,
+				'utm_campaign' => 'upgrade',
+			),
+			$url
+		);
+		return $url;
 	}
 
 	public function render_product_fields() {
@@ -85,10 +109,16 @@ class DropLock_Admin {
 			'value' => $show_badge,
 		) );
 
-		echo '<p class="form-field" style="padding-left:12px;color:#666;font-size:12px;">'
+		echo '<p class="form-field" style="padding-left:12px;color:#666;font-size:12px;margin-bottom:4px;">'
 			. esc_html__( 'Counted order statuses: Completed, Processing, On-hold.', 'droplock' )
-			. ' <a href="https://droplockwp.com/?utm_source=lite&utm_medium=product_edit&utm_campaign=pro" target="_blank" rel="noopener">'
-			. esc_html__( 'Customize in Pro', 'droplock' ) . '</a>'
+			. '</p>';
+
+		// Tasteful, single-line "locked in Pro" hint. Not a nag — one line, contextual.
+		echo '<p class="form-field droplock-pro-hint" style="padding-left:12px;color:#777;font-size:12px;">'
+			. '<span class="dashicons dashicons-lock" style="font-size:14px;width:14px;height:14px;vertical-align:text-bottom;color:#999;"></span> '
+			. esc_html__( 'Pro unlocks per-variation limits, category &amp; tag rules, configurable statuses, and a launch-window countdown.', 'droplock' )
+			. ' <a href="' . esc_url( self::pro_url( 'product_edit', 'editions' ) ) . '" target="_blank" rel="noopener">'
+			. esc_html__( 'Compare Free vs Pro', 'droplock' ) . ' &rarr;</a>'
 			. '</p>';
 
 		echo '</div>';
@@ -219,24 +249,133 @@ class DropLock_Admin {
 			</div>
 
 			<div class="droplock-card droplock-pro-card">
-				<h2><?php esc_html_e( 'Want more?', 'droplock' ); ?></h2>
-				<p><?php esc_html_e( 'DropLock Pro adds:', 'droplock' ); ?></p>
-				<ul style="list-style:disc;padding-left:20px;">
-					<li><?php esc_html_e( 'Per-variation limits', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Category and tag level rules', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Custom counted order statuses per product', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Full blocked attempts log with filters, search, and CSV export', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Launch date/time window and countdown badge', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Waitlist email capture', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Priority email support', 'droplock' ); ?></li>
-				</ul>
-				<p>
-					<a class="button button-primary" href="https://droplockwp.com/?utm_source=lite&utm_medium=dashboard&utm_campaign=pro" target="_blank" rel="noopener">
-						<?php esc_html_e( 'See DropLock Pro', 'droplock' ); ?>
+				<h2><?php esc_html_e( 'Free vs Pro', 'droplock' ); ?></h2>
+				<p><?php esc_html_e( 'You are running the free version. Here is exactly what it does, and what Pro adds.', 'droplock' ); ?></p>
+
+				<table class="widefat striped droplock-compare">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Capability', 'droplock' ); ?></th>
+							<th style="text-align:center;width:90px;"><?php esc_html_e( 'Free', 'droplock' ); ?></th>
+							<th style="text-align:center;width:90px;"><?php esc_html_e( 'Pro', 'droplock' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php
+						$same = array(
+							__( 'Lifetime per-customer limit', 'droplock' ),
+							__( 'Add-to-cart, cart &amp; checkout validation', 'droplock' ),
+							__( 'Guest matching by billing email', 'droplock' ),
+							__( 'Variations roll up to the parent product', 'droplock' ),
+							__( 'HPOS &amp; Block Checkout support', 'droplock' ),
+							__( 'Admin / shop-manager bypass', 'droplock' ),
+							__( 'Custom limit message &amp; product badge', 'droplock' ),
+						);
+						foreach ( $same as $row_label ) {
+							echo '<tr><td>' . wp_kses_post( $row_label ) . '</td>'
+								. '<td style="text-align:center;color:#46b450;font-weight:600;">&#10003;</td>'
+								. '<td style="text-align:center;color:#46b450;font-weight:600;">&#10003;</td></tr>';
+						}
+						$pro = array(
+							array( __( 'Blocked-attempt log history', 'droplock' ), __( 'Last 50', 'droplock' ), __( 'Unlimited', 'droplock' ) ),
+							array( __( 'Choose which order statuses count', 'droplock' ), __( 'Fixed', 'droplock' ), __( 'Per product', 'droplock' ) ),
+							array( __( 'Clear log &amp; CSV export', 'droplock' ), '&mdash;', '&#10003;' ),
+							array( __( 'Per-variation limits', 'droplock' ), '&mdash;', __( 'Planned', 'droplock' ) ),
+							array( __( 'Category &amp; tag rules', 'droplock' ), '&mdash;', __( 'Planned', 'droplock' ) ),
+							array( __( 'Launch window + countdown', 'droplock' ), '&mdash;', __( 'Planned', 'droplock' ) ),
+							array( __( 'Priority email support', 'droplock' ), '&mdash;', '&#10003;' ),
+						);
+						foreach ( $pro as $r ) {
+							echo '<tr><td>' . wp_kses_post( $r[0] ) . '</td>'
+								. '<td style="text-align:center;color:#888;">' . wp_kses_post( $r[1] ) . '</td>'
+								. '<td style="text-align:center;color:#1d2327;font-weight:600;">' . wp_kses_post( $r[2] ) . '</td></tr>';
+						}
+						?>
+					</tbody>
+				</table>
+
+				<p style="margin-top:16px;">
+					<a class="button button-primary button-hero" href="<?php echo esc_url( self::pro_url( 'dashboard', 'editions' ) ); ?>" target="_blank" rel="noopener">
+						<?php esc_html_e( 'Upgrade to DropLock Pro', 'droplock' ); ?> &rarr;
+					</a>
+					&nbsp;
+					<a class="button" href="<?php echo esc_url( self::pro_url( 'dashboard', 'ch-iv' ) ); ?>" target="_blank" rel="noopener">
+						<?php esc_html_e( 'View pricing', 'droplock' ); ?>
+					</a>
+					&nbsp;
+					<a href="https://droplockwp.com/docs/" target="_blank" rel="noopener" style="line-height:2.4;">
+						<?php esc_html_e( 'Documentation', 'droplock' ); ?>
 					</a>
 				</p>
 			</div>
 		</div>
 		<?php
+	}
+
+	/* -------------------------------------------------------------------
+	 * Milestone notice: shown once after DropLock has blocked enough
+	 * purchases to prove its value. Dismissible, WooCommerce screens only.
+	 * ------------------------------------------------------------------- */
+
+	public function maybe_render_milestone_notice() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+		if ( get_option( self::MILESTONE_OPTION ) ) {
+			return;
+		}
+		// Only on WooCommerce / DropLock / Plugins screens — never globally.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen ) {
+			return;
+		}
+		$allowed = ( false !== strpos( (string) $screen->id, 'woocommerce' ) )
+			|| ( false !== strpos( (string) $screen->id, 'droplock' ) )
+			|| ( 'plugins' === $screen->id )
+			|| ( 'dashboard' === $screen->id );
+		if ( ! $allowed ) {
+			return;
+		}
+
+		$total = (int) $this->logger->count_total();
+		if ( $total < self::MILESTONE_THRESHOLD ) {
+			return;
+		}
+
+		$dismiss_url = wp_nonce_url(
+			add_query_arg( 'droplock_dismiss_milestone', '1' ),
+			'droplock_dismiss_milestone'
+		);
+		?>
+		<div class="notice notice-success is-dismissible droplock-milestone">
+			<p style="font-size:13px;">
+				<strong><?php esc_html_e( 'Nice work — DropLock is paying off.', 'droplock' ); ?></strong>
+				<?php
+				printf(
+					/* translators: %d: number of blocked purchases */
+					esc_html__( 'It has already blocked %d duplicate purchases on your store. Pro adds per-variation limits, launch windows, and an unlimited log.', 'droplock' ),
+					$total
+				);
+				?>
+				<a href="<?php echo esc_url( self::pro_url( 'milestone_notice', 'editions' ) ); ?>" target="_blank" rel="noopener">
+					<?php esc_html_e( 'See what Pro adds', 'droplock' ); ?> &rarr;
+				</a>
+				&nbsp;<a href="<?php echo esc_url( $dismiss_url ); ?>" style="color:#787c82;text-decoration:none;"><?php esc_html_e( 'Dismiss', 'droplock' ); ?></a>
+			</p>
+		</div>
+		<?php
+	}
+
+	public function maybe_dismiss_milestone_notice() {
+		if ( empty( $_GET['droplock_dismiss_milestone'] ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+		check_admin_referer( 'droplock_dismiss_milestone' );
+		update_option( self::MILESTONE_OPTION, time(), false );
+		wp_safe_redirect( remove_query_arg( array( 'droplock_dismiss_milestone', '_wpnonce' ) ) );
+		exit;
 	}
 }

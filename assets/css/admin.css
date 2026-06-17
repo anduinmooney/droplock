@@ -24,3 +24,18 @@
 .droplock-pro-card {
 	border-left: 4px solid #d04600 !important;
 }
+.droplock-compare {
+	margin-top: 12px;
+	max-width: 640px;
+}
+.droplock-compare th,
+.droplock-compare td {
+	font-size: 13px;
+	padding: 8px 12px;
+}
+.droplock-compare thead th:nth-child(3) {
+	color: #d04600;
+}
+.droplock-pro-hint .dashicons-lock {
+	opacity: 0.7;
+}

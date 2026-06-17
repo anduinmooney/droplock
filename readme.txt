@@ -4,7 +4,7 @@ Tags: woocommerce, limit purchase, one per customer, limited edition, drops
 Requires at least: 6.5
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -126,6 +126,12 @@ Yes. Click Delete (not Deactivate) on the Plugins screen. The `uninstall.php` sc
 4. WooCommerce → DropLock admin dashboard with the blocked-attempt log.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added a Free vs Pro comparison on the DropLock dashboard.
+* Added a one-time, dismissible milestone notice after DropLock has blocked enough purchases to prove its value (WooCommerce screens only).
+* Clearer, single-line "what Pro unlocks" hint on the product edit screen.
+* Pricing and documentation links from the dashboard.
 
 = 1.0.0 =
 * Initial release.
