@@ -3,7 +3,7 @@
  * Plugin Name:       DropLock — Limit Purchases Per Customer
  * Plugin URI:        https://droplockwp.com
  * Description:       Limit a WooCommerce product to one (or N) per customer across all of their orders. Stops duplicate purchases on limited drops and one-per-customer products.
- * Version:           1.1.0
+ * Version:           2.0.0
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Author:            DropLock
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DROPLOCK_VERSION', '1.1.0' );
+define( 'DROPLOCK_VERSION', '2.0.0' );
 define( 'DROPLOCK_IS_LITE', true );
 define( 'DROPLOCK_PLUGIN_FILE', __FILE__ );
 define( 'DROPLOCK_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );

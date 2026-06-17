@@ -65,7 +65,7 @@ class DropLock_Plugin {
 		}
 		$product_id = $product->is_type( 'variation' ) ? $product->get_parent_id() : $product->get_id();
 
-		if ( ! DropLock_Helper::is_enabled( $product_id ) || ! DropLock_Helper::should_show_badge( $product_id ) ) {
+		if ( ! DropLock_Helper::is_protected( $product_id ) || ! DropLock_Helper::should_show_badge( $product_id ) ) {
 			return;
 		}
 

@@ -84,21 +84,6 @@ class DropLock_Admin {
 			'value'             => get_post_meta( $post->ID, DropLock_Helper::META_MAX_QTY, true ) ?: '1',
 		) );
 
-		woocommerce_wp_textarea_input( array(
-			'id'          => DropLock_Helper::META_LIMIT_MESSAGE,
-			'label'       => __( 'Custom limit message', 'droplock' ),
-			'placeholder' => DropLock_Helper::default_limit_message(),
-			'description' => __( 'Variables: {product_name}, {limit}, {purchased_qty}, {cart_qty}, {remaining_qty}', 'droplock' ),
-			'rows'        => 3,
-		) );
-
-		woocommerce_wp_text_input( array(
-			'id'          => DropLock_Helper::META_BADGE_TEXT,
-			'label'       => __( 'Product badge text', 'droplock' ),
-			'placeholder' => DropLock_Helper::default_badge_text(),
-			'description' => __( 'Variables: {product_name}, {limit}', 'droplock' ),
-		) );
-
 		$show_badge = get_post_meta( $post->ID, DropLock_Helper::META_SHOW_BADGE, true );
 		if ( '' === $show_badge ) {
 			$show_badge = 'yes';
@@ -109,14 +94,29 @@ class DropLock_Admin {
 			'value' => $show_badge,
 		) );
 
-		echo '<p class="form-field" style="padding-left:12px;color:#666;font-size:12px;margin-bottom:4px;">'
-			. esc_html__( 'Counted order statuses: Completed, Processing, On-hold.', 'droplock' )
-			. '</p>';
+		// One-product-slot status. Free actively protects a single product.
+		$enabled_here = ( 'yes' === get_post_meta( $post->ID, DropLock_Helper::META_ENABLED, true ) );
+		$slot_id      = DropLock_Helper::free_slot_product_id();
+		$slot_taken_elsewhere = ( $slot_id && $slot_id !== (int) $post->ID );
 
-		// Tasteful, single-line "locked in Pro" hint. Not a nag — one line, contextual.
+		if ( $enabled_here && $slot_taken_elsewhere ) {
+			$slot_title = get_the_title( $slot_id );
+			$slot_edit  = get_edit_post_link( $slot_id );
+			echo '<p class="form-field" style="padding-left:12px;color:#b32d2e;font-size:12px;">'
+				. '<span class="dashicons dashicons-warning" style="font-size:14px;width:14px;height:14px;vertical-align:text-bottom;"></span> ';
+			printf(
+				/* translators: %s: linked product title */
+				wp_kses_post( __( 'DropLock Free protects one product, and your slot is currently used by %s. This product is saved but <strong>not enforced</strong> until you free the slot or upgrade.', 'droplock' ) ),
+				$slot_edit ? '<a href="' . esc_url( $slot_edit ) . '">' . esc_html( $slot_title ) . '</a>' : esc_html( $slot_title )
+			);
+			echo ' <a href="' . esc_url( self::pro_url( 'product_edit_slot', 'editions' ) ) . '" target="_blank" rel="noopener">'
+				. esc_html__( 'Upgrade for unlimited products', 'droplock' ) . ' &rarr;</a></p>';
+		}
+
+		// Tasteful "locked in Pro" hint block.
 		echo '<p class="form-field droplock-pro-hint" style="padding-left:12px;color:#777;font-size:12px;">'
 			. '<span class="dashicons dashicons-lock" style="font-size:14px;width:14px;height:14px;vertical-align:text-bottom;color:#999;"></span> '
-			. esc_html__( 'Pro unlocks per-variation limits, category &amp; tag rules, configurable statuses, and a launch-window countdown.', 'droplock' )
+			. esc_html__( 'Free protects 1 product with the default message and badge. Pro adds unlimited products, custom messages &amp; badges, configurable statuses, per-variation limits, category &amp; tag rules, and a launch-window countdown.', 'droplock' )
 			. ' <a href="' . esc_url( self::pro_url( 'product_edit', 'editions' ) ) . '" target="_blank" rel="noopener">'
 			. esc_html__( 'Compare Free vs Pro', 'droplock' ) . ' &rarr;</a>'
 			. '</p>';
@@ -172,26 +172,42 @@ class DropLock_Admin {
 			wp_die( esc_html__( 'You do not have permission to view this page.', 'droplock' ) );
 		}
 
-		$rows  = $this->logger->get_recent( DROPLOCK_LITE_LOG_CAP );
+		$free_log_show = 5;
+		$rows  = $this->logger->get_recent( $free_log_show );
 		$total = $this->logger->count_total();
+		$slot_id = DropLock_Helper::free_slot_product_id();
 		?>
 		<div class="wrap droplock-wrap">
-			<h1><?php esc_html_e( 'DropLock', 'droplock' ); ?></h1>
+			<h1><?php esc_html_e( 'DropLock', 'droplock' ); ?> <span style="font-size:12px;background:#ddd;color:#333;border-radius:3px;padding:2px 8px;vertical-align:middle;">FREE</span></h1>
 
 			<div class="droplock-card">
 				<h2><?php esc_html_e( 'Overview', 'droplock' ); ?></h2>
-				<p><?php esc_html_e( 'DropLock enforces lifetime purchase limits per customer on the products you protect.', 'droplock' ); ?></p>
+				<p><?php esc_html_e( 'DropLock Free enforces a lifetime per-customer purchase limit on one product. It is the full engine — just scoped to a single product so you can try it.', 'droplock' ); ?></p>
+				<?php if ( $slot_id ) : ?>
+					<p style="background:#f0f6fc;border:1px solid #c5d9ed;border-radius:4px;padding:8px 12px;">
+						<span class="dashicons dashicons-yes-alt" style="color:#46b450;vertical-align:text-bottom;"></span>
+						<?php
+						$slot_edit = get_edit_post_link( $slot_id );
+						printf(
+							/* translators: %s: linked product title */
+							wp_kses_post( __( 'Active free slot: <strong>%s</strong>. Upgrade to Pro to protect unlimited products.', 'droplock' ) ),
+							$slot_edit ? '<a href="' . esc_url( $slot_edit ) . '">' . esc_html( get_the_title( $slot_id ) ) . '</a>' : esc_html( get_the_title( $slot_id ) )
+						);
+						?>
+					</p>
+				<?php else : ?>
+					<p><em><?php esc_html_e( 'No product is protected yet. Edit a product, scroll to the DropLock section in the General tab, and enable it.', 'droplock' ); ?></em></p>
+				<?php endif; ?>
 				<ol>
 					<li><?php esc_html_e( 'Edit a product.', 'droplock' ); ?></li>
 					<li><?php esc_html_e( 'Enable DropLock and set the maximum quantity per customer.', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Customize the message and badge if you want.', 'droplock' ); ?></li>
-					<li><?php esc_html_e( 'Save the product.', 'droplock' ); ?></li>
+					<li><?php esc_html_e( 'Save the product. Free protects one product with the default message and badge.', 'droplock' ); ?></li>
 				</ol>
 			</div>
 
 			<div class="droplock-card">
 				<h2><?php esc_html_e( 'Recent blocked attempts', 'droplock' ); ?></h2>
-				<p><?php printf( esc_html__( 'Showing the last %1$d entries (free version cap). Total blocked: %2$d.', 'droplock' ), (int) DROPLOCK_LITE_LOG_CAP, (int) $total ); ?></p>
+				<p><?php printf( esc_html__( 'Free shows the last %1$d of %2$d total blocks. The full log with filters and CSV export is a Pro feature.', 'droplock' ), (int) $free_log_show, (int) $total ); ?></p>
 
 				<?php if ( empty( $rows ) ) : ?>
 					<p><em><?php esc_html_e( 'No blocked attempts yet.', 'droplock' ); ?></em></p>
@@ -269,7 +285,6 @@ class DropLock_Admin {
 							__( 'Variations roll up to the parent product', 'droplock' ),
 							__( 'HPOS &amp; Block Checkout support', 'droplock' ),
 							__( 'Admin / shop-manager bypass', 'droplock' ),
-							__( 'Custom limit message &amp; product badge', 'droplock' ),
 						);
 						foreach ( $same as $row_label ) {
 							echo '<tr><td>' . wp_kses_post( $row_label ) . '</td>'
@@ -277,9 +292,11 @@ class DropLock_Admin {
 								. '<td style="text-align:center;color:#46b450;font-weight:600;">&#10003;</td></tr>';
 						}
 						$pro = array(
-							array( __( 'Blocked-attempt log history', 'droplock' ), __( 'Last 50', 'droplock' ), __( 'Unlimited', 'droplock' ) ),
+							array( __( 'Products you can protect', 'droplock' ), '1', __( 'Unlimited', 'droplock' ) ),
+							array( __( 'Custom limit message', 'droplock' ), __( 'Default', 'droplock' ), __( 'Editable', 'droplock' ) ),
+							array( __( 'Custom product badge', 'droplock' ), __( 'Default', 'droplock' ), __( 'Editable', 'droplock' ) ),
 							array( __( 'Choose which order statuses count', 'droplock' ), __( 'Fixed', 'droplock' ), __( 'Per product', 'droplock' ) ),
-							array( __( 'Clear log &amp; CSV export', 'droplock' ), '&mdash;', '&#10003;' ),
+							array( __( 'Blocked-attempt log', 'droplock' ), __( 'Count + last 5', 'droplock' ), __( 'Full + CSV', 'droplock' ) ),
 							array( __( 'Per-variation limits', 'droplock' ), '&mdash;', __( 'Planned', 'droplock' ) ),
 							array( __( 'Category &amp; tag rules', 'droplock' ), '&mdash;', __( 'Planned', 'droplock' ) ),
 							array( __( 'Launch window + countdown', 'droplock' ), '&mdash;', __( 'Planned', 'droplock' ) ),

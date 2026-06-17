@@ -47,6 +47,59 @@ class DropLock_Helper {
 		return $qty > 0 ? $qty : 1;
 	}
 
+	/* -------------------------------------------------------------------
+	 * Free edition limit: DropLock Free protects ONE product.
+	 * The "free slot" is the lowest-ID product with DropLock enabled.
+	 * Only that product is actively enforced; enabling more is a Pro feature.
+	 * ------------------------------------------------------------------- */
+
+	/**
+	 * IDs of all products with DropLock enabled.
+	 *
+	 * @return int[]
+	 */
+	public static function enabled_product_ids() {
+		$ids = get_posts(
+			array(
+				'post_type'      => array( 'product' ),
+				'post_status'    => 'any',
+				'fields'         => 'ids',
+				'posts_per_page' => 50,
+				'meta_key'       => self::META_ENABLED,
+				'meta_value'     => 'yes',
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+				'no_found_rows'  => true,
+			)
+		);
+		return is_array( $ids ) ? array_map( 'intval', $ids ) : array();
+	}
+
+	/**
+	 * The single product the free edition actively protects (lowest enabled ID),
+	 * or 0 if none.
+	 */
+	public static function free_slot_product_id() {
+		$ids = self::enabled_product_ids();
+		return $ids ? (int) $ids[0] : 0;
+	}
+
+	/**
+	 * Is this product the active free slot (and therefore enforced)?
+	 */
+	public static function is_free_slot( $product_id ) {
+		$product_id = (int) $product_id;
+		return $product_id > 0 && $product_id === self::free_slot_product_id();
+	}
+
+	/**
+	 * Whether DropLock actively enforces a limit on this product.
+	 * In Free this is true only for the single free-slot product.
+	 */
+	public static function is_protected( $product_id ) {
+		return self::is_enabled( $product_id ) && self::is_free_slot( $product_id );
+	}
+
 	/**
 	 * Lite uses defaults only; ignores any saved status meta.
 	 */
@@ -54,20 +107,19 @@ class DropLock_Helper {
 		return self::default_statuses();
 	}
 
+	/**
+	 * Free always uses the default message. Custom messages are a Pro feature,
+	 * so any previously-saved custom value is ignored here.
+	 */
 	public static function get_limit_message( $product_id ) {
-		$msg = get_post_meta( (int) $product_id, self::META_LIMIT_MESSAGE, true );
-		if ( ! is_string( $msg ) || '' === trim( $msg ) ) {
-			$msg = self::default_limit_message();
-		}
-		return $msg;
+		return self::default_limit_message();
 	}
 
+	/**
+	 * Free always uses the default badge text. Custom badge text is a Pro feature.
+	 */
 	public static function get_badge_text( $product_id ) {
-		$txt = get_post_meta( (int) $product_id, self::META_BADGE_TEXT, true );
-		if ( ! is_string( $txt ) || '' === trim( $txt ) ) {
-			$txt = self::default_badge_text();
-		}
-		return $txt;
+		return self::default_badge_text();
 	}
 
 	public static function should_show_badge( $product_id ) {

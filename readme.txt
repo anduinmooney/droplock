@@ -4,15 +4,17 @@ Tags: woocommerce, limit purchase, one per customer, limited edition, drops
 Requires at least: 6.5
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Limit a WooCommerce product to one (or N) per customer across all of their orders. Stops duplicate purchases on limited drops.
+Limit one WooCommerce product to one (or N) per customer across all of their orders. Free protects one product; Pro protects unlimited.
 
 == Description ==
 
-DropLock enforces lifetime per-customer purchase limits on WooCommerce products. Unlike the built-in "Sold individually" setting (which only limits one cart at a time), DropLock blocks duplicate purchases across multiple orders.
+DropLock enforces a lifetime per-customer purchase limit on WooCommerce products. Unlike the built-in "Sold individually" setting (which only limits one cart at a time), DropLock blocks duplicate purchases across every order a customer has ever placed.
+
+**DropLock Free is the full enforcement engine, scoped to one product** so you can try it on a real drop. When you need to protect more products, customize the message and badge, or unlock per-variation and category rules, [DropLock Pro](https://droplockwp.com) does that.
 
 = Built for =
 
@@ -24,20 +26,34 @@ DropLock enforces lifetime per-customer purchase limits on WooCommerce products.
 * Limited merch drops
 * One-per-customer promotions
 
-= Features =
+= What the Free version does =
 
-* Lifetime per-customer limit per product
-* Drop Mode toggle per product (no global rules to fight with)
+* Protects **one product** with a lifetime per-customer limit
 * Logged-in customers matched by user ID
 * Guest customers matched by billing email at checkout
-* Validation at add-to-cart, cart-update, and checkout
-* Customizable limit message with variables: {product_name}, {limit}, {purchased_qty}, {cart_qty}, {remaining_qty}
-* Customizable product page badge
+* Validation at add-to-cart, cart-update, and checkout (before the order is created)
+* Default limit message and product badge
 * Admin / shop manager bypass (you can still place manual orders)
-* Variations roll up to the parent product (one limit covers all variations)
+* Variations roll up to the parent product
 * HPOS (High-Performance Order Storage) compatible
 * WooCommerce Cart & Checkout Blocks compatible
-* Blocked attempt log inside WooCommerce → DropLock
+* Blocked-attempt count plus the 5 most recent entries
+
+= Free vs Pro =
+
+| Capability | Free | Pro |
+| --- | --- | --- |
+| Products you can protect | 1 | Unlimited |
+| Lifetime per-customer limit + validation | Yes | Yes |
+| Guest + logged-in matching, HPOS, Blocks, admin bypass | Yes | Yes |
+| Custom limit message | Default | Editable |
+| Custom product badge | Default | Editable |
+| Counted order statuses | Fixed | Per product |
+| Blocked-attempt log | Count + last 5 | Full + CSV export |
+| Per-variation limits, category & tag rules, launch window | — | Yes / on the roadmap |
+| Priority email support | — | Yes |
+
+[See DropLock Pro &rarr;](https://droplockwp.com)
 
 = How customer matching works =
 
@@ -57,7 +73,7 @@ DropLock Pro lets you customize the counted statuses per product.
 
 = Honest limitations =
 
-DropLock blocks the 95% of duplicate purchases that come from honest re-orders and casual second purchases. It cannot stop a determined attacker who uses a clean email, a new account, and a different card — no email-based check can. If you need bot/fraud protection on top of per-customer limits, pair DropLock with Cloudflare Bot Management or hCaptcha.
+DropLock reliably stops repeat purchases through the same customer account or the same billing email — which covers most accidental and casual duplicate orders. It cannot stop a determined attacker who uses a clean email, a new account, and a different card; no email-based check can. If you need bot/fraud protection on top of per-customer limits, pair DropLock with Cloudflare Bot Management or hCaptcha.
 
 = DropLock Pro =
 
@@ -126,6 +142,12 @@ Yes. Click Delete (not Deactivate) on the Plugins screen. The `uninstall.php` sc
 4. WooCommerce → DropLock admin dashboard with the blocked-attempt log.
 
 == Changelog ==
+
+= 2.0.0 =
+* Free now protects one product (the active "free slot" is the first product you enable). Protecting more products is a Pro feature. Existing settings are preserved.
+* Free now uses the default limit message and product badge; editable message and badge are Pro features.
+* The dashboard log shows the 5 most recent blocks plus the total count; the full log with CSV export is a Pro feature.
+* Clear in-product messaging about which product holds your free slot, and what Pro unlocks.
 
 = 1.1.0 =
 * Added a Free vs Pro comparison on the DropLock dashboard.

@@ -29,7 +29,7 @@ class DropLock_Validator {
 			return $passed;
 		}
 		$effective_id = DropLock_Helper::get_effective_product_id( $product_id );
-		if ( ! DropLock_Helper::is_enabled( $effective_id ) ) {
+		if ( ! DropLock_Helper::is_protected( $effective_id ) ) {
 			return $passed;
 		}
 
@@ -79,7 +79,7 @@ class DropLock_Validator {
 		$variation_id = isset( $values['variation_id'] ) ? (int) $values['variation_id'] : 0;
 		$effective_id = DropLock_Helper::get_effective_product_id( $variation_id ?: $product_id );
 
-		if ( ! DropLock_Helper::is_enabled( $effective_id ) ) {
+		if ( ! DropLock_Helper::is_protected( $effective_id ) ) {
 			return $passed;
 		}
 
@@ -139,7 +139,7 @@ class DropLock_Validator {
 				continue;
 			}
 			$seen[ $effective_id ] = true;
-			if ( ! DropLock_Helper::is_enabled( $effective_id ) ) {
+			if ( ! DropLock_Helper::is_protected( $effective_id ) ) {
 				continue;
 			}
 
@@ -199,7 +199,7 @@ class DropLock_Validator {
 				continue;
 			}
 			$seen[ $effective_id ] = true;
-			if ( ! DropLock_Helper::is_enabled( $effective_id ) ) {
+			if ( ! DropLock_Helper::is_protected( $effective_id ) ) {
 				continue;
 			}
 
