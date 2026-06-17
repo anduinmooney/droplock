@@ -1,5 +1,5 @@
 === DropLock — Limit Purchases Per Customer ===
-Contributors: droplock
+Contributors: anduinf43898fba2
 Tags: woocommerce, limit purchase, one per customer, limited edition, drops
 Requires at least: 6.5
 Tested up to: 6.7
